@@ -5,9 +5,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 CONFIG = {
-    "api_key": os.environ.get(
-        "OPENROUTER_API_KEY",
-        "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",
+    "api_key": os.environ.get("OPENROUTER_API_KEY", ""),,
     ),
     "api_base": "https://openrouter.ai/api/v1",
     "model": "openrouter/auto:online",  # web-enabled router model
