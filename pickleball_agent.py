@@ -5,18 +5,18 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 CONFIG = {
-    # Prefer loading from environment; you can also hard-code while testing
+    # For local dev you can hard‑code the key; on Streamlit, prefer env var
     "api_key": os.environ.get(
         "OPENROUTER_API_KEY",
         "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",
     ),
     "api_base": "https://openrouter.ai/api/v1",
-    "model": "openrouter/auto",
-    "max_tokens": 200,
+    "model": "openrouter/auto:online",  # web-enabled router model
+    "max_tokens": 220,
 }
 
 
-def call_openrouter_api(messages, temperature=0.5):
+def call_openrouter_api(messages, temperature=0.7):
     headers = {
         "Authorization": f"Bearer {CONFIG['api_key']}",
         "HTTP-Referer": "https://pickleball-chatbot.local",
@@ -27,6 +27,13 @@ def call_openrouter_api(messages, temperature=0.5):
         "messages": messages,
         "temperature": temperature,
         "max_tokens": CONFIG["max_tokens"],
+        # Enable OpenRouter web search plugin so the model can browse
+        "plugins": [
+            {
+                "id": "web",
+                "max_results": 3,
+            }
+        ],
     }
     resp = requests.post(
         f"{CONFIG['api_base']}/chat/completions",
@@ -50,91 +57,106 @@ def call_openrouter_api(messages, temperature=0.5):
 PICKLEBALL_KB = {
     "rules": {
         "scoring": (
-            "Games are usually played to 11 points, win by 2. "
-            "Only the serving team can score."
+            "Standard games go to 11 points, win by 2. "
+            "Only the serving team can score, and you call score as server score, receiver score, server number."
         ),
         "serving": (
             "Serve underhand from behind the baseline, diagonally cross-court, "
-            "and clear the non-volley zone."
+            "and the ball must clear the non-volley zone (kitchen) including the line."
+        ),
+        "two_bounce": (
+            "After the serve, the ball must bounce once on the return and once on the next shot "
+            "before anyone can volley. This is the two-bounce rule."
         ),
         "kitchen": (
             "The kitchen (non-volley zone) is a 7-foot area by the net. "
-            "You cannot volley while touching it or its line."
-        ),
-        "double_bounce": (
-            "After the serve, the ball must bounce once on each side "
-            "before anyone can volley."
+            "You may step in to hit a ball that has bounced, but you cannot volley while touching it or its line."
         ),
         "faults": (
-            "Faults include: hitting out, into the net, volleying from the kitchen, "
-            "or missing the serve."
+            "Common faults: serve lands in the kitchen, ball out of bounds, ball into the net, "
+            "ball bounces twice, or volleying from the kitchen."
         ),
         "singles_doubles": (
-            "Singles is 1 vs 1. Doubles is 2 vs 2. "
-            "Scoring and serving rotations change slightly between them."
+            "Singles is 1 vs 1, doubles is 2 vs 2. "
+            "Serving order and court positioning change slightly, but the main rules are the same."
+        ),
+        "let_serve": (
+            "Most modern play does not use lets on serves. If the serve clips the net but lands correctly, "
+            "the ball is still in play."
         ),
     },
     "equipment": {
         "ball": (
-            "A pickleball is a light plastic ball with holes, "
-            "with different types for indoor and outdoor play."
+            "A pickleball is a light plastic ball with holes. "
+            "Outdoor balls are a bit harder with smaller holes; indoor balls are softer with larger holes."
         ),
         "paddle": (
             "Paddles are solid, usually composite or graphite, "
-            "larger than a ping-pong paddle and smaller than a tennis racket."
+            "bigger than a ping-pong paddle and smaller than a tennis racket."
         ),
         "court": (
-            "The court is 20 by 44 feet with a 7-foot non-volley zone "
-            "on each side of the net. Same size for singles and doubles."
+            "The court is 20 by 44 feet with a 7-foot non-volley zone on each side of the net. "
+            "The same court size is used for singles and doubles."
+        ),
+        "shoes": (
+            "Court shoes with good lateral support are best. "
+            "Running shoes are not ideal because they are built for straight-line motion."
         ),
     },
     "tips": {
         "consistency": (
-            "Aim for safe, consistent shots instead of constant winners, "
-            "especially as a beginner."
+            "Play high-percentage shots: clear the net with a safe margin and keep the ball in. "
+            "Winning at beginner level is mostly about fewer unforced errors."
         ),
         "dink": (
-            "Practice soft dinks into the kitchen to control pace "
-            "and force opponents to hit up."
+            "Practice soft dinks into the kitchen to slow the game down and force your opponents to hit up. "
+            "Think smooth, relaxed swings rather than big power."
+        ),
+        "third_shot": (
+            "On your team’s third shot, aim for a soft drop into the kitchen instead of blasting it. "
+            "That gives you time to move to the net."
         ),
         "positioning": (
-            "Move to the non-volley line as soon as it is safe "
-            "and try to play most rallies from there."
+            "Try to get both partners up to the non-volley line together. "
+            "Playing from the baseline all the time puts you at a big disadvantage."
         ),
-        "strategy": (
-            "Communicate with your partner, attack weaker sides, and keep the ball low."
+        "communication": (
+            "In doubles, call balls that are yours, shout 'mine' or 'yours', and decide in advance who takes "
+            "middle balls and lobs."
         ),
         "footwork": (
-            "Use small, balanced steps and stay on the balls of your feet "
-            "to move quickly."
+            "Stay light on your feet, take small adjustment steps, and avoid crossing your feet when moving sideways."
         ),
     },
     "players": {
         "ben_johns": (
-            "Ben Johns is a leading professional pickleball player "
-            "and multi-time champion."
+            "Ben Johns is one of the most successful pro pickleball players, "
+            "known for his balanced offense and defense and multiple titles in singles and doubles."
         ),
         "anna_leigh_waters": (
-            "Anna Leigh Waters is a top professional known for dominating "
-            "women's singles and doubles."
+            "Anna Leigh Waters is a top women's pro, famous for her aggressive style "
+            "and dominance in singles, doubles, and mixed doubles."
+        ),
+        "other_notable": (
+            "Other notable pros include Tyson McGuffin, JW Johnson, Riley Newman, and Catherine Parenteau."
         ),
     },
     "general": {
         "what_is": (
-            "Pickleball is a paddle sport combining tennis, badminton, and table "
-            "tennis, played on a small court with a perforated plastic ball."
+            "Pickleball is a paddle sport that mixes elements of tennis, badminton, and table tennis, "
+            "played on a small court with a perforated plastic ball."
         ),
         "history": (
-            "Pickleball started in 1965 on Bainbridge Island, Washington, "
-            "as a backyard game and grew into a worldwide sport."
+            "Pickleball began in 1965 on Bainbridge Island, Washington, as a backyard family game and "
+            "has grown into a global sport with pro tours."
         ),
         "popularity": (
-            "Millions now play pickleball, with community courts, leagues, "
-            "and professional tours."
+            "Pickleball is one of the fastest-growing sports, with millions of players and new courts "
+            "popping up in parks, gyms, and clubs."
         ),
         "players_needed": (
-            "Pickleball is normally played with 2 players for singles "
-            "(1 on each side) or 4 players for doubles (2 on each side)."
+            "You usually play pickleball with 2 players for singles (1 on each side) "
+            "or 4 players for doubles (2 on each side)."
         ),
     },
 }
@@ -144,19 +166,29 @@ def search_kb(question: str) -> str:
     q = question.lower()
     q = q.replace("pickle ball", "pickleball")
 
-    # Exact "how many players" style
+    # Number of players
     if "how many players" in q or ("players" in q and "needed" in q):
         return PICKLEBALL_KB["general"]["players_needed"]
 
-    # Players (pros)
+    # Explicit beginner intent
+    if "beginner" in q or "first time" in q or "new to pickleball" in q:
+        return " ".join(
+            [
+                PICKLEBALL_KB["general"]["what_is"],
+                PICKLEBALL_KB["rules"]["scoring"],
+                PICKLEBALL_KB["tips"]["consistency"],
+            ]
+        )
+
+    # Famous players
     if "famous" in q or "best" in q or "pro" in q or "professional" in q:
         return " ".join(PICKLEBALL_KB["players"].values())
 
     # Tips / coaching
-    if "tip" in q or "beginner" in q or "improve" in q or "strategy" in q:
+    if "tip" in q or "improve" in q or "strategy" in q or "drill" in q:
         return " ".join(PICKLEBALL_KB["tips"].values())
 
-    # General
+    # General info
     if "what is pickleball" in q or ("what" in q and "pickleball" in q):
         return PICKLEBALL_KB["general"]["what_is"]
     if "history" in q:
@@ -165,16 +197,18 @@ def search_kb(question: str) -> str:
         return PICKLEBALL_KB["general"]["popularity"]
 
     # Rules
+    if "two bounce" in q or "double bounce" in q:
+        return PICKLEBALL_KB["rules"]["two_bounce"]
     if "kitchen" in q or "non-volley" in q or "nvz" in q:
         return PICKLEBALL_KB["rules"]["kitchen"]
     if "score" in q or "scoring" in q or "points" in q:
         return PICKLEBALL_KB["rules"]["scoring"]
     if "serve" in q or "serving" in q or "server" in q:
         return PICKLEBALL_KB["rules"]["serving"]
-    if "double bounce" in q or ("double" in q and "bounce" in q):
-        return PICKLEBALL_KB["rules"]["double_bounce"]
     if "fault" in q or "error" in q or "violation" in q:
         return PICKLEBALL_KB["rules"]["faults"]
+    if "let" in q and "serve" in q:
+        return PICKLEBALL_KB["rules"]["let_serve"]
     if "single" in q or "doubles" in q:
         return PICKLEBALL_KB["rules"]["singles_doubles"]
 
@@ -185,24 +219,37 @@ def search_kb(question: str) -> str:
         return PICKLEBALL_KB["equipment"]["ball"]
     if "court" in q or "dimension" in q or "size" in q:
         return PICKLEBALL_KB["equipment"]["court"]
+    if "shoe" in q or "shoes" in q:
+        return PICKLEBALL_KB["equipment"]["shoes"]
 
     # Fallback
-    return "No exact fact found in the knowledge base; answer from general pickleball understanding."
+    return "No exact fact found in the KB; combine basic pickleball knowledge with web results."
 
 
 def pickleball_agent(question: str) -> str:
     kb_info = search_kb(question)
 
     SYSTEM_PROMPT = """
-You are a friendly pickleball coach for beginners.
+You are a chill, friendly pickleball coach who loves helping beginners.
 
-Your job:
-- Answer ONLY questions about pickleball rules, how to play, equipment, courts, and players.
-- Use the KB info as the main truth. You may add a few simple extra details as long as they do not conflict with the KB.
-- Give clear, encouraging explanations in 2–6 short sentences.
-- Start with a direct answer in the first sentence, then briefly explain why or how.
-- If KB info says there is no exact fact, answer from general pickleball knowledge but keep it beginner friendly.
-- If the question is not about pickleball, say: "I only answer pickleball questions. Please ask about pickleball."
+Style:
+- Talk like a helpful friend: casual, clear, encouraging.
+- Use short paragraphs or bullet points so answers are easy to skim.
+- Add 1–2 practical tips or simple examples whenever it helps.
+
+Knowledge:
+- You can use both the built-in pickleball KB (given as 'KB info') and live web results.
+- Treat the KB as trusted basics, then enrich it with up-to-date and detailed info from the web.
+- If KB info and the web ever disagree, prefer official rule sources and recent articles.
+
+Scope:
+- Stick to pickleball: rules, how to play, technique, drills, equipment, court layout, strategies, and famous players.
+- If the question is not about pickleball, say politely: "I'm your pickleball buddy, so I can only help with pickleball stuff."
+
+Answer format:
+- Start with a one-sentence direct answer.
+- Then add 2–5 sentences (or a few bullets) explaining the why/how in simple terms.
+- If the user sounds very new (words like "beginner" or "first time"), explain it extra simply and avoid jargon.
 """
 
     messages = [
@@ -213,10 +260,9 @@ Your job:
         },
     ]
 
-    answer = call_openrouter_api(messages, temperature=0.5)
+    answer = call_openrouter_api(messages, temperature=0.7)
 
     if isinstance(answer, str) and "online model failed" in answer:
-        # fall back to plain KB text
         return kb_info
 
     return answer
