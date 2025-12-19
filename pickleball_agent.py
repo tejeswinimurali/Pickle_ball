@@ -5,10 +5,9 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 CONFIG = {
-    # For local dev you can hard‑code the key; on Streamlit, prefer env var
     "api_key": os.environ.get(
         "OPENROUTER_API_KEY",
-        "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",
+        "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",
     ),
     "api_base": "https://openrouter.ai/api/v1",
     "model": "openrouter/auto:online",  # web-enabled router model
@@ -27,7 +26,6 @@ def call_openrouter_api(messages, temperature=0.7):
         "messages": messages,
         "temperature": temperature,
         "max_tokens": CONFIG["max_tokens"],
-        # Enable OpenRouter web search plugin so the model can browse
         "plugins": [
             {
                 "id": "web",
@@ -42,7 +40,6 @@ def call_openrouter_api(messages, temperature=0.7):
         timeout=60,
         verify=False,
     )
-
     data = resp.json()
 
     if "choices" not in data:
@@ -166,6 +163,21 @@ def search_kb(question: str) -> str:
     q = question.lower()
     q = q.replace("pickle ball", "pickleball")
 
+    # General "explain pickleball" intent FIRST (so it doesn't fall into 'ball')
+    if (
+        "explain pickleball" in q
+        or "pickleball game" in q
+        or ("what is" in q and "pickleball" in q)
+        or (q.strip() == "pickleball")
+    ):
+        return " ".join(
+            [
+                PICKLEBALL_KB["general"]["what_is"],
+                PICKLEBALL_KB["rules"]["scoring"],
+                PICKLEBALL_KB["rules"]["serving"],
+            ]
+        )
+
     # Number of players
     if "how many players" in q or ("players" in q and "needed" in q):
         return PICKLEBALL_KB["general"]["players_needed"]
@@ -222,34 +234,49 @@ def search_kb(question: str) -> str:
     if "shoe" in q or "shoes" in q:
         return PICKLEBALL_KB["equipment"]["shoes"]
 
-    # Fallback
-    return "No exact fact found in the KB; combine basic pickleball knowledge with web results."
+    # Fallback: generic info, so online model still has context
+    return "General pickleball info: " + " ".join(
+        [
+            PICKLEBALL_KB["general"]["what_is"],
+            PICKLEBALL_KB["general"]["popularity"],
+        ]
+    )
 
 
 def pickleball_agent(question: str) -> str:
+    # If the question is clearly NOT about pickleball, let the model say that
+    lower_q = question.lower()
+    if "pickle" not in lower_q and "paddle" not in lower_q and "court" not in lower_q:
+        system_prompt = """
+You are a friendly pickleball coach. 
+If the user asks about something that is NOT related to pickleball, politely say:
+"I'm your pickleball buddy, so I can only help with pickleball stuff."
+Do not answer non-pickleball questions.
+"""
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": question},
+        ]
+        answer = call_openrouter_api(messages, temperature=0.7)
+        return answer
+
     kb_info = search_kb(question)
 
     SYSTEM_PROMPT = """
-You are a chill, friendly pickleball coach who loves helping beginners.
+You are a super friendly, energetic pickleball coach who LOVES answering beginner questions.
 
-Style:
-- Talk like a helpful friend: casual, clear, encouraging.
-- Use short paragraphs or bullet points so answers are easy to skim.
-- Add 1–2 practical tips or simple examples whenever it helps.
+Tone:
+- Start warmly when it fits: "Love this question!", "Happy to help!", etc.
+- Sound encouraging and positive.
+- Keep language casual and simple.
+
+Answer style:
+- First line: short, direct answer in a friendly tone.
+- Then 3–6 short sentences or a few bullets explaining the why/how with 1–2 practical tips.
 
 Knowledge:
-- You can use both the built-in pickleball KB (given as 'KB info') and live web results.
-- Treat the KB as trusted basics, then enrich it with up-to-date and detailed info from the web.
-- If KB info and the web ever disagree, prefer official rule sources and recent articles.
-
-Scope:
-- Stick to pickleball: rules, how to play, technique, drills, equipment, court layout, strategies, and famous players.
-- If the question is not about pickleball, say politely: "I'm your pickleball buddy, so I can only help with pickleball stuff."
-
-Answer format:
-- Start with a one-sentence direct answer.
-- Then add 2–5 sentences (or a few bullets) explaining the why/how in simple terms.
-- If the user sounds very new (words like "beginner" or "first time"), explain it extra simply and avoid jargon.
+- Use the KB info given plus any web results.
+- Stick strictly to pickleball topics.
 """
 
     messages = [
@@ -262,6 +289,7 @@ Answer format:
 
     answer = call_openrouter_api(messages, temperature=0.7)
 
+    # If online model fails, fall back to KB info
     if isinstance(answer, str) and "online model failed" in answer:
         return kb_info
 
