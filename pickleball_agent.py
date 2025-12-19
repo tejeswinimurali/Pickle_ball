@@ -5,12 +5,12 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 CONFIG = {
-    "api_key": os.environ.get("OPENROUTER_API_KEY", ""),,
-    ),
+    "api_key": os.environ.get("OPENROUTER_API_KEY", ""),
     "api_base": "https://openrouter.ai/api/v1",
     "model": "openrouter/auto:online",  # web-enabled router model
     "max_tokens": 220,
 }
+
 
 
 def call_openrouter_api(messages, temperature=0.7):
