@@ -4,19 +4,12 @@ from typing import Dict
 
 from langchain.tools import tool
 from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain_core.prompts import ChatPromptTemplate
-
-
-
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# ---------- Config ----------
-
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-MODEL_NAME = "openrouter/auto:online"  # router model
+MODEL_NAME = "openrouter/auto:online"
 
 # ---------- Knowledge base ----------
 
@@ -136,7 +129,6 @@ PICKLEBALL_KB: Dict[str, Dict[str, str]] = {
 
 
 def search_kb(question: str) -> str:
-    """KB search logic."""
     q = question.lower()
     q = q.replace("pickle ball", "pickleball")
 
@@ -211,8 +203,6 @@ def search_kb(question: str) -> str:
     )
 
 
-# ---------- LangChain tool + agent ----------
-
 @tool
 def pickleball_kb_tool(question: str) -> str:
     """Answer pickleball questions from a curated knowledge base of rules, tips, equipment, and players."""
@@ -220,7 +210,6 @@ def pickleball_kb_tool(question: str) -> str:
 
 
 def build_llm() -> ChatOpenAI:
-    """Create a LangChain ChatOpenAI client that talks to OpenRouter."""
     return ChatOpenAI(
         model=MODEL_NAME,
         openai_api_key=OPENROUTER_API_KEY,
@@ -230,43 +219,26 @@ def build_llm() -> ChatOpenAI:
     )
 
 
-def build_agent() -> AgentExecutor:
-    """Initialize a LangChain agent that can call the KB tool."""
-    llm = build_llm()
-    tools = [pickleball_kb_tool]
-
-    system_prompt = (
-        "You are a super friendly, energetic pickleball coach who LOVES answering beginner questions.\n"
-        "Only talk about pickleball. If the user asks about anything else, say you are a pickleball-only bot.\n"
-        "First line: short, direct answer in a friendly tone. Then 3–6 short sentences with 1–2 practical tips."
-    )
-
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system_prompt),
-            ("human", "{input}"),
-            ("placeholder", "{agent_scratchpad}"),
-        ]
-    )
-
-    lc_agent = create_tool_calling_agent(llm, tools, prompt)
-    executor = AgentExecutor(agent=lc_agent, tools=tools, verbose=False)
-    return executor
-
-
-_AGENT = None  # cached agent
-
-
-def get_agent() -> AgentExecutor:
-    global _AGENT
-    if _AGENT is None:
-        _AGENT = build_agent()
-    return _AGENT
-
-
 def run_agent(question: str) -> str:
-    """Entry point used by Streamlit: run the LangChain agent on a question."""
-    agent = get_agent()
-    result = agent.invoke({"input": question})
-    # AgentExecutor returns a dict; final answer is usually under "output"
-    return result.get("output", str(result))
+    """
+    Simple 'agentic' behavior:
+    - Always fetch KB info with the tool.
+    - Let the LLM turn it into a friendly answer.
+    """
+    kb_answer = pickleball_kb_tool.run(question)
+
+    if not OPENROUTER_API_KEY:
+        # KB-only fallback
+        return kb_answer
+
+    llm = build_llm()
+    prompt = (
+        "You are a super friendly, energetic pickleball coach for beginners.\n"
+        "Use the KB info below plus the user's question to answer.\n\n"
+        f"User question: {question}\n"
+        f"KB info: {kb_answer}\n\n"
+        "First line: short, direct answer in a friendly tone.\n"
+        "Then 3–6 short sentences with 1–2 practical tips.\n"
+    )
+    resp = llm.invoke(prompt)
+    return resp.content
