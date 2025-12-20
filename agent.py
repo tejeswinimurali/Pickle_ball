@@ -1,11 +1,12 @@
 # agent.py
 import os
 import urllib3
-from typing import List, Dict
+from typing import Dict
 
 from langchain.tools import tool
 from langchain_openai import ChatOpenAI
-from langchain.agents import initialize_agent, AgentType
+from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain_core.prompts import ChatPromptTemplate
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -133,7 +134,7 @@ PICKLEBALL_KB: Dict[str, Dict[str, str]] = {
 
 
 def search_kb(question: str) -> str:
-    """Your existing KB search logic."""
+    """KB search logic."""
     q = question.lower()
     q = q.replace("pickle ball", "pickleball")
 
@@ -227,7 +228,7 @@ def build_llm() -> ChatOpenAI:
     )
 
 
-def build_agent():
+def build_agent() -> AgentExecutor:
     """Initialize a LangChain agent that can call the KB tool."""
     llm = build_llm()
     tools = [pickleball_kb_tool]
@@ -238,23 +239,24 @@ def build_agent():
         "First line: short, direct answer in a friendly tone. Then 3–6 short sentences with 1–2 practical tips."
     )
 
-    agent = initialize_agent(
-        tools=tools,
-        llm=llm,
-        agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-        verbose=False,
-        handle_parsing_errors=True,
-        system_message=system_prompt,
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_prompt),
+            ("human", "{input}"),
+            ("placeholder", "{agent_scratchpad}"),
+        ]
     )
-    return agent
+
+    lc_agent = create_tool_calling_agent(llm, tools, prompt)
+    executor = AgentExecutor(agent=lc_agent, tools=tools, verbose=False)
+    return executor
 
 
-# Single shared agent instance (optional but convenient)
-_AGENT = None
+_AGENT = None  # cached agent
 
 
-def get_agent():
-    global __AGENT
+def get_agent() -> AgentExecutor:
+    global _AGENT
     if _AGENT is None:
         _AGENT = build_agent()
     return _AGENT
@@ -263,4 +265,6 @@ def get_agent():
 def run_agent(question: str) -> str:
     """Entry point used by Streamlit: run the LangChain agent on a question."""
     agent = get_agent()
-    return agent.run(question)
+    result = agent.invoke({"input": question})
+    # AgentExecutor returns a dict; final answer is usually under "output"
+    return result.get("output", str(result))
