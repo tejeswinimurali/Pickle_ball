@@ -1,59 +1,28 @@
+# agent.py
 import os
-import requests
 import urllib3
+from typing import List, Dict
+
+from langchain.tools import tool
+from langchain_openai import ChatOpenAI
+from langchain.agents import initialize_agent, AgentType
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-CONFIG = {
-    "api_key": os.environ.get("OPENROUTER_API_KEY", ""),
-    "api_base": "https://openrouter.ai/api/v1",
-    "model": "openrouter/auto:online",  # web-enabled router model
-    "max_tokens": 220,
-}
+# ---------- Config ----------
 
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+MODEL_NAME = "openrouter/auto:online"  # router model
 
+# ---------- Knowledge base ----------
 
-def call_openrouter_api(messages, temperature=0.7):
-    headers = {
-        "Authorization": f"Bearer {CONFIG['api_key']}",
-        "HTTP-Referer": "https://pickleball-chatbot.local",
-        "X-Title": "Pickleball FAQ Agent",
-    }
-    payload = {
-        "model": CONFIG["model"],
-        "messages": messages,
-        "temperature": temperature,
-        "max_tokens": CONFIG["max_tokens"],
-        "plugins": [
-            {
-                "id": "web",
-                "max_results": 3,
-            }
-        ],
-    }
-    resp = requests.post(
-        f"{CONFIG['api_base']}/chat/completions",
-        headers=headers,
-        json=payload,
-        timeout=60,
-        verify=False,
-    )
-    data = resp.json()
-
-    if "choices" not in data:
-        err = data.get("error", {})
-        msg = err.get("message", "unknown error")
-        code = err.get("code", "no code")
-        return f"Sorry, the online model failed (code {code}: {msg}). Please try again."
-
-    return data["choices"][0]["message"]["content"]
-
-
-PICKLEBALL_KB = {
+PICKLEBALL_KB: Dict[str, Dict[str, str]] = {
     "rules": {
         "scoring": (
             "Standard games go to 11 points, win by 2. "
-            "Only the serving team can score, and you call score as server score, receiver score, server number."
+            "Only the serving team can score, and you call score as "
+            "server score, receiver score, server number."
         ),
         "serving": (
             "Serve underhand from behind the baseline, diagonally cross-court, "
@@ -65,7 +34,8 @@ PICKLEBALL_KB = {
         ),
         "kitchen": (
             "The kitchen (non-volley zone) is a 7-foot area by the net. "
-            "You may step in to hit a ball that has bounced, but you cannot volley while touching it or its line."
+            "You may step in to hit a ball that has bounced, but you cannot volley "
+            "while touching it or its line."
         ),
         "faults": (
             "Common faults: serve lands in the kitchen, ball out of bounds, ball into the net, "
@@ -73,17 +43,19 @@ PICKLEBALL_KB = {
         ),
         "singles_doubles": (
             "Singles is 1 vs 1, doubles is 2 vs 2. "
-            "Serving order and court positioning change slightly, but the main rules are the same."
+            "Serving order and court positioning change slightly, "
+            "but the main rules are the same."
         ),
         "let_serve": (
-            "Most modern play does not use lets on serves. If the serve clips the net but lands correctly, "
-            "the ball is still in play."
+            "Most modern play does not use lets on serves. If the serve clips the net "
+            "but lands correctly, the ball is still in play."
         ),
     },
     "equipment": {
         "ball": (
             "A pickleball is a light plastic ball with holes. "
-            "Outdoor balls are a bit harder with smaller holes; indoor balls are softer with larger holes."
+            "Outdoor balls are a bit harder with smaller holes; "
+            "indoor balls are softer with larger holes."
         ),
         "paddle": (
             "Paddles are solid, usually composite or graphite, "
@@ -104,8 +76,8 @@ PICKLEBALL_KB = {
             "Winning at beginner level is mostly about fewer unforced errors."
         ),
         "dink": (
-            "Practice soft dinks into the kitchen to slow the game down and force your opponents to hit up. "
-            "Think smooth, relaxed swings rather than big power."
+            "Practice soft dinks into the kitchen to slow the game down and force your opponents "
+            "to hit up. Think smooth, relaxed swings rather than big power."
         ),
         "third_shot": (
             "On your team’s third shot, aim for a soft drop into the kitchen instead of blasting it. "
@@ -116,38 +88,41 @@ PICKLEBALL_KB = {
             "Playing from the baseline all the time puts you at a big disadvantage."
         ),
         "communication": (
-            "In doubles, call balls that are yours, shout 'mine' or 'yours', and decide in advance who takes "
-            "middle balls and lobs."
+            "In doubles, call balls that are yours, shout 'mine' or 'yours', and decide in advance "
+            "who takes middle balls and lobs."
         ),
         "footwork": (
-            "Stay light on your feet, take small adjustment steps, and avoid crossing your feet when moving sideways."
+            "Stay light on your feet, take small adjustment steps, "
+            "and avoid crossing your feet when moving sideways."
         ),
     },
     "players": {
         "ben_johns": (
             "Ben Johns is one of the most successful pro pickleball players, "
-            "known for his balanced offense and defense and multiple titles in singles and doubles."
+            "known for his balanced offense and defense and multiple titles "
+            "in singles and doubles."
         ),
         "anna_leigh_waters": (
             "Anna Leigh Waters is a top women's pro, famous for her aggressive style "
             "and dominance in singles, doubles, and mixed doubles."
         ),
         "other_notable": (
-            "Other notable pros include Tyson McGuffin, JW Johnson, Riley Newman, and Catherine Parenteau."
+            "Other notable pros include Tyson McGuffin, JW Johnson, "
+            "Riley Newman, and Catherine Parenteau."
         ),
     },
     "general": {
         "what_is": (
-            "Pickleball is a paddle sport that mixes elements of tennis, badminton, and table tennis, "
-            "played on a small court with a perforated plastic ball."
+            "Pickleball is a paddle sport that mixes elements of tennis, badminton, "
+            "and table tennis, played on a small court with a perforated plastic ball."
         ),
         "history": (
-            "Pickleball began in 1965 on Bainbridge Island, Washington, as a backyard family game and "
-            "has grown into a global sport with pro tours."
+            "Pickleball began in 1965 on Bainbridge Island, Washington, "
+            "as a backyard family game and has grown into a global sport with pro tours."
         ),
         "popularity": (
-            "Pickleball is one of the fastest-growing sports, with millions of players and new courts "
-            "popping up in parks, gyms, and clubs."
+            "Pickleball is one of the fastest-growing sports, with millions of players "
+            "and new courts popping up in parks, gyms, and clubs."
         ),
         "players_needed": (
             "You usually play pickleball with 2 players for singles (1 on each side) "
@@ -158,10 +133,10 @@ PICKLEBALL_KB = {
 
 
 def search_kb(question: str) -> str:
+    """Your existing KB search logic."""
     q = question.lower()
     q = q.replace("pickle ball", "pickleball")
 
-    # General "explain pickleball" intent FIRST (so it doesn't fall into 'ball')
     if (
         "explain pickleball" in q
         or "pickleball game" in q
@@ -176,11 +151,9 @@ def search_kb(question: str) -> str:
             ]
         )
 
-    # Number of players
     if "how many players" in q or ("players" in q and "needed" in q):
         return PICKLEBALL_KB["general"]["players_needed"]
 
-    # Explicit beginner intent
     if "beginner" in q or "first time" in q or "new to pickleball" in q:
         return " ".join(
             [
@@ -190,15 +163,12 @@ def search_kb(question: str) -> str:
             ]
         )
 
-    # Famous players
     if "famous" in q or "best" in q or "pro" in q or "professional" in q:
         return " ".join(PICKLEBALL_KB["players"].values())
 
-    # Tips / coaching
     if "tip" in q or "improve" in q or "strategy" in q or "drill" in q:
         return " ".join(PICKLEBALL_KB["tips"].values())
 
-    # General info
     if "what is pickleball" in q or ("what" in q and "pickleball" in q):
         return PICKLEBALL_KB["general"]["what_is"]
     if "history" in q:
@@ -206,7 +176,6 @@ def search_kb(question: str) -> str:
     if "popular" in q or "popularity" in q or "growing" in q:
         return PICKLEBALL_KB["general"]["popularity"]
 
-    # Rules
     if "two bounce" in q or "double bounce" in q:
         return PICKLEBALL_KB["rules"]["two_bounce"]
     if "kitchen" in q or "non-volley" in q or "nvz" in q:
@@ -222,7 +191,6 @@ def search_kb(question: str) -> str:
     if "single" in q or "doubles" in q:
         return PICKLEBALL_KB["rules"]["singles_doubles"]
 
-    # Equipment
     if "paddle" in q:
         return PICKLEBALL_KB["equipment"]["paddle"]
     if "ball" in q:
@@ -232,7 +200,6 @@ def search_kb(question: str) -> str:
     if "shoe" in q or "shoes" in q:
         return PICKLEBALL_KB["equipment"]["shoes"]
 
-    # Fallback: generic info, so online model still has context
     return "General pickleball info: " + " ".join(
         [
             PICKLEBALL_KB["general"]["what_is"],
@@ -241,54 +208,59 @@ def search_kb(question: str) -> str:
     )
 
 
-def pickleball_agent(question: str) -> str:
-    # If the question is clearly NOT about pickleball, let the model say that
-    lower_q = question.lower()
-    if "pickle" not in lower_q and "paddle" not in lower_q and "court" not in lower_q:
-        system_prompt = """
-You are a friendly pickleball coach. 
-If the user asks about something that is NOT related to pickleball, politely say:
-"I'm your pickleball buddy, so I can only help with pickleball stuff."
-Do not answer non-pickleball questions.
-"""
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": question},
-        ]
-        answer = call_openrouter_api(messages, temperature=0.7)
-        return answer
+# ---------- LangChain tool + agent ----------
 
-    kb_info = search_kb(question)
+@tool
+def pickleball_kb_tool(question: str) -> str:
+    """Answer pickleball questions from a curated knowledge base of rules, tips, equipment, and players."""
+    return search_kb(question)
 
-    SYSTEM_PROMPT = """
-You are a super friendly, energetic pickleball coach who LOVES answering beginner questions.
 
-Tone:
-- Start warmly when it fits: "Love this question!", "Happy to help!", etc.
-- Sound encouraging and positive.
-- Keep language casual and simple.
+def build_llm() -> ChatOpenAI:
+    """Create a LangChain ChatOpenAI client that talks to OpenRouter."""
+    return ChatOpenAI(
+        model=MODEL_NAME,
+        openai_api_key=OPENROUTER_API_KEY,
+        openai_api_base=OPENROUTER_BASE_URL,
+        temperature=0.7,
+        max_tokens=220,
+    )
 
-Answer style:
-- First line: short, direct answer in a friendly tone.
-- Then 3–6 short sentences or a few bullets explaining the why/how with 1–2 practical tips.
 
-Knowledge:
-- Use the KB info given plus any web results.
-- Stick strictly to pickleball topics.
-"""
+def build_agent():
+    """Initialize a LangChain agent that can call the KB tool."""
+    llm = build_llm()
+    tools = [pickleball_kb_tool]
 
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {
-            "role": "user",
-            "content": f"User question: {question}\n\nKB info: {kb_info}",
-        },
-    ]
+    system_prompt = (
+        "You are a super friendly, energetic pickleball coach who LOVES answering beginner questions.\n"
+        "Only talk about pickleball. If the user asks about anything else, say you are a pickleball-only bot.\n"
+        "First line: short, direct answer in a friendly tone. Then 3–6 short sentences with 1–2 practical tips."
+    )
 
-    answer = call_openrouter_api(messages, temperature=0.7)
+    agent = initialize_agent(
+        tools=tools,
+        llm=llm,
+        agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+        verbose=False,
+        handle_parsing_errors=True,
+        system_message=system_prompt,
+    )
+    return agent
 
-    # If online model fails, fall back to KB info
-    if isinstance(answer, str) and "online model failed" in answer:
-        return kb_info
 
-    return answer
+# Single shared agent instance (optional but convenient)
+_AGENT = None
+
+
+def get_agent():
+    global __AGENT
+    if _AGENT is None:
+        _AGENT = build_agent()
+    return _AGENT
+
+
+def run_agent(question: str) -> str:
+    """Entry point used by Streamlit: run the LangChain agent on a question."""
+    agent = get_agent()
+    return agent.run(question)

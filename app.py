@@ -1,101 +1,60 @@
+# app.py
 import os
-import base64
 import streamlit as st
-from pickleball_agent import pickleball_agent  # the file above
 
+from agent import run_agent, OPENROUTER_API_KEY
 
-st.set_page_config(
-    page_title="Pickleball FAQ Bot",
-    page_icon="🏓",
-    layout="centered",
+st.set_page_config(page_title="Pickleball FAQ Coach", page_icon="🏓")
+
+st.title("Pickleball FAQ Coach 🏓")
+st.write(
+    "Ask anything about pickleball rules, equipment, tips, or famous players. "
+    "This bot uses a pickleball knowledge base plus an OpenRouter-powered LLM."
 )
 
-# Optional: warn if no API key (Cloud)
-if not os.environ.get("OPENROUTER_API_KEY"):
-    st.sidebar.warning(
+# Environment warning
+if not OPENROUTER_API_KEY:
+    st.warning(
         "OPENROUTER_API_KEY is not set on this deployment. "
-        "The bot may rely more on simple KB answers."
+        "The bot may rely more on simple KB-style answers."
     )
 
-# Background GIF
-gif_path = "pickleball.gif"
-if os.path.exists(gif_path):
-    with open(gif_path, "rb") as f:
-        data = f.read()
-        data_url = base64.b64encode(data).decode("utf-8")
+# Simple chat UI
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-    st.markdown(
-        f"""
-        <style>
-        .stApp {{
-            background-image: url("data:image/gif;base64,{data_url}");
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }}
+for role, content in st.session_state.messages:
+    with st.chat_message(role):
+        st.markdown(content)
 
-        h1, h2, h3 {{
-            color: #000000;
-            font-weight: 800;
-        }}
+user_input = st.chat_input("Ask a pickleball question...")
+if user_input:
+    # Show user message
+    st.session_state.messages.append(("user", user_input))
+    with st.chat_message("user"):
+        st.markdown(user_input)
 
-        h3#ask-your-question {{
-            color: #000000 !important;
-            font-weight: 900 !important;
-            font-size: 1.7rem !important;
-        }}
+    # Run agent
+    with st.chat_message("assistant"):
+        with st.spinner("Coach is thinking..."):
+            try:
+                answer = run_agent(user_input)
+            except Exception as e:
+                answer = (
+                    "Oops, something went wrong with the online model. "
+                    "Here is a basic KB answer instead.\n\n"
+                )
+                # Optional: you could call search_kb here directly if you import it.
 
-        .stApp, .stMarkdown, label, p {{
-            color: #111111 !important;
-            font-weight: 600;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+            st.markdown(answer)
+            st.session_state.messages.append(("assistant", answer))
 
-st.title("Hello Pickleball")
-st.caption("Beginner‑friendly answers to your pickleball questions.")
-
-st.sidebar.title("How to use")
-st.sidebar.write(
-    "- Ask about **rules**: kitchen, scoring, serving.\n"
-    "- Ask for **tips**: 'Give me 3 beginner tips'.\n"
-    "- Ask about **equipment** or **famous players**.\n"
-    "- Try casual things like 'hi' or 'explain pickleball game'."
+st.sidebar.header("How to use")
+st.sidebar.markdown(
+    """
+- Ask about **rules**: kitchen, scoring, serving, faults.
+- Ask for **tips**: dinks, third shot, positioning, drills.
+- Ask about **equipment**: paddles, balls, shoes, court size.
+- Ask about **players**: Ben Johns, Anna Leigh Waters, etc.
+"""
 )
-
-st.subheader("Ask your question", anchor="ask-your-question")
-
-with st.form("ask_form", enter_to_submit=True):
-    question = st.text_input(
-        "Type a pickleball question:",
-        placeholder="Example: What is the kitchen rule?",
-    )
-    ask_clicked = st.form_submit_button("Ask")
-
-if ask_clicked and question.strip():
-    with st.spinner("Thinking..."):
-        answer = pickleball_agent(question)
-
-    st.markdown("### Answer")
-    st.markdown(
-        f"""
-        <div style="
-            background-color: rgba(255, 255, 255, 0.92);
-            padding: 1.25rem 1.5rem;
-            border-radius: 0.8rem;
-            max-width: 900px;
-            margin: 0.5rem auto 1.5rem auto;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
-            color: #111111;
-            font-weight: 600;
-            line-height: 1.4;
-        ">
-        {answer}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-elif ask_clicked:
-    st.warning("Please type a question before pressing Ask.")
