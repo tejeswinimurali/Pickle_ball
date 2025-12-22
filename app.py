@@ -16,14 +16,20 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Hide the entire built‑in header area */
-    header.stAppHeader, div[data-testid="stDecoration"] {
-        display: none;
+    /* Hide Streamlit header / toolbar / decoration strip */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    div[data-testid="stToolbar"] {
+        display: none !important;
+    }
+    div[data-testid="stDecoration"] {
+        display: none !important;
     }
 
-    /* Pull content up since header is gone */
-    section.stMain > div.block-container {
-        padding-top: 0.2rem;
+    /* Pull main app up and set width */
+    section[data-testid="stMain"] > div.block-container {
+        padding-top: 0.1rem;
         padding-bottom: 0.8rem;
         max-width: 820px;
     }
@@ -50,7 +56,7 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True,
-)  # [web:1188][web:1100]
+)  # [web:1179][web:1100]
 
 # -----------------------------
 # Card container
@@ -78,7 +84,7 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 # -----------------------------
-# Input (bottom)
+# Input (always last)
 # -----------------------------
 user_input = st.chat_input("Say hi or ask a sports question...")
 
@@ -101,6 +107,3 @@ if user_input:
         st.session_state.messages.append({"role": "assistant", "content": reply})
 
 st.markdown("</div>", unsafe_allow_html=True)
-
-
-
