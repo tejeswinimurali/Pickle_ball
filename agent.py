@@ -9,9 +9,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-MODEL_NAME = "meta-llama/llama-3.1-8b-instruct:free"
+MODEL_NAME = "meta-llama/llama-3.1-8b-instruct:free"  # free model on OpenRouter [web:1074]
 
-# ---------- Knowledge base ----------
+# ---------- Knowledge base (fallback only) ----------
 
 SPORTS_KB: Dict[str, Dict[str, str]] = {
     "general": {
@@ -30,31 +30,21 @@ SPORTS_KB: Dict[str, Dict[str, str]] = {
             "and individual sports like athletics and swimming."
         ),
     },
-
     "football": {
         "basic_rules": (
             "Football (soccer) is played by two teams of 11 players. "
             "You score by getting the ball into the opponent's goal using any body part "
             "except hands and arms, unless you are the goalkeeper."
-        ),
+        ),  # [web:1025]
         "equipment": (
             "Basic football equipment: a football, jerseys, shorts, socks, shin guards, and boots "
             "with studs or cleats for grip on the pitch."
-        ),
-        "duration": (
-            "A standard match is 90 minutes, split into two 45-minute halves, "
-            "plus stoppage time added by the referee."
-        ),
-        "fouls": (
-            "Fouls are given for actions like tripping, pushing, or handball. "
-            "Serious fouls can result in yellow or red cards."
-        ),
+        ),  # [web:1034]
         "famous_players": (
             "Some famous footballers include Lionel Messi, Cristiano Ronaldo, "
             "Neymar Jr, Kylian Mbappé, and Sunil Chhetri."
         ),
     },
-
     "basketball": {
         "basic_rules": (
             "Basketball is played by two teams of five players on the court. "
@@ -65,16 +55,11 @@ SPORTS_KB: Dict[str, Dict[str, str]] = {
             "You need a basketball, an indoor or outdoor court with hoops, "
             "and supportive court shoes for quick changes of direction."
         ),
-        "duration": (
-            "Games are usually played in four quarters, each commonly 10 or 12 minutes long "
-            "depending on the league."
-        ),
         "famous_players": (
             "Famous basketball players include Michael Jordan, LeBron James, "
             "Kobe Bryant, Stephen Curry, and Giannis Antetokounmpo."
         ),
     },
-
     "tennis": {
         "basic_rules": (
             "Tennis can be played singles (1 vs 1) or doubles (2 vs 2). "
@@ -84,13 +69,12 @@ SPORTS_KB: Dict[str, Dict[str, str]] = {
         "equipment": (
             "You need a tennis racket, tennis balls, and a court with a net. "
             "Tennis shoes with good lateral support are recommended."
-        ),
+        ),  # [web:1037]
         "famous_players": (
             "Famous tennis players include Roger Federer, Rafael Nadal, "
             "Novak Djokovic, Serena Williams, and Iga Świątek."
         ),
     },
-
     "cricket": {
         "basic_rules": (
             "Cricket is played between two teams of eleven players. "
@@ -100,13 +84,12 @@ SPORTS_KB: Dict[str, Dict[str, str]] = {
         "equipment": (
             "Key cricket equipment: bat, hard leather ball, stumps and bails, "
             "protective pads, gloves, helmet, and appropriate footwear."
-        ),
+        ),  # [web:1040]
         "famous_players": (
             "Well-known cricketers include Sachin Tendulkar, Virat Kohli, "
             "MS Dhoni, Ben Stokes, and Ellyse Perry."
         ),
     },
-
     "training_tips": {
         "beginners": (
             "If you are new to sports, start with simple drills, warm up properly, "
@@ -122,7 +105,6 @@ SPORTS_KB: Dict[str, Dict[str, str]] = {
             "Focus on learning and enjoyment, not just winning."
         ),
     },
-
     "injury_prevention": {
         "warmup": (
             "Always warm up 5–10 minutes with light movement and dynamic stretches "
@@ -141,6 +123,7 @@ SPORTS_KB: Dict[str, Dict[str, str]] = {
 
 
 def search_kb(question: str) -> str:
+    """Very simple rules to build a fallback answer when online fails."""
     q = question.lower()
 
     if "what is sport" in q or ("what is" in q and "sport" in q):
@@ -161,42 +144,40 @@ def search_kb(question: str) -> str:
         )
 
     if "football" in q or "soccer" in q:
-        pieces = [SPORTS_KB["football"]["basic_rules"]]
-        if "equipment" in q or "need" in q:
-            pieces.append(SPORTS_KB["football"]["equipment"])
-        if "time" in q or "how long" in q or "duration" in q:
-            pieces.append(SPORTS_KB["football"]["duration"])
-        if "foul" in q or "card" in q:
-            pieces.append(SPORTS_KB["football"]["fouls"])
-        if "famous" in q or "best" in q or "player" in q:
-            pieces.append(SPORTS_KB["football"]["famous_players"])
-        return " ".join(pieces)
+        return " ".join(
+            [
+                SPORTS_KB["football"]["basic_rules"],
+                SPORTS_KB["football"]["equipment"],
+                SPORTS_KB["football"]["famous_players"],
+            ]
+        )
 
     if "basketball" in q:
-        pieces = [SPORTS_KB["basketball"]["basic_rules"]]
-        if "equipment" in q or "need" in q:
-            pieces.append(SPORTS_KB["basketball"]["equipment"])
-        if "time" in q or "how long" in q or "duration" in q:
-            pieces.append(SPORTS_KB["basketball"]["duration"])
-        if "famous" in q or "best" in q or "player" in q:
-            pieces.append(SPORTS_KB["basketball"]["famous_players"])
-        return " ".join(pieces)
+        return " ".join(
+            [
+                SPORTS_KB["basketball"]["basic_rules"],
+                SPORTS_KB["basketball"]["equipment"],
+                SPORTS_KB["basketball"]["famous_players"],
+            ]
+        )
 
     if "tennis" in q:
-        pieces = [SPORTS_KB["tennis"]["basic_rules"]]
-        if "equipment" in q or "need" in q:
-            pieces.append(SPORTS_KB["tennis"]["equipment"])
-        if "famous" in q or "best" in q or "player" in q:
-            pieces.append(SPORTS_KB["tennis"]["famous_players"])
-        return " ".join(pieces)
+        return " ".join(
+            [
+                SPORTS_KB["tennis"]["basic_rules"],
+                SPORTS_KB["tennis"]["equipment"],
+                SPORTS_KB["tennis"]["famous_players"],
+            ]
+        )
 
     if "cricket" in q:
-        pieces = [SPORTS_KB["cricket"]["basic_rules"]]
-        if "equipment" in q or "need" in q:
-            pieces.append(SPORTS_KB["cricket"]["equipment"])
-        if "famous" in q or "best" in q or "player" in q:
-            pieces.append(SPORTS_KB["cricket"]["famous_players"])
-        return " ".join(pieces)
+        return " ".join(
+            [
+                SPORTS_KB["cricket"]["basic_rules"],
+                SPORTS_KB["cricket"]["equipment"],
+                SPORTS_KB["cricket"]["famous_players"],
+            ]
+        )
 
     if "tip" in q or "improve" in q or "practice" in q or "training" in q:
         return " ".join(SPORTS_KB["training_tips"].values())
@@ -225,7 +206,7 @@ def search_kb(question: str) -> str:
 
 @tool
 def sports_kb_tool(question: str) -> str:
-    """Answer sports questions from a curated knowledge base of rules, tips, equipment, and famous players across multiple sports."""
+    """Fallback sports answer from a small offline knowledge base."""
     return search_kb(question)
 
 
@@ -236,28 +217,46 @@ def build_llm() -> ChatOpenAI:
         openai_api_base=OPENROUTER_BASE_URL,
         temperature=0.7,
         max_tokens=220,
-    )
+    )  # [web:1031]
 
 
 def run_agent(question: str) -> str:
-    kb_answer = sports_kb_tool.run(question)
+    """
+    Online-first strategy:
+    - Try OpenRouter model (which can use its own training + web tools).
+    - If the call fails (no key, 402, timeout, etc.), fall back to KB.
+    """
+    fallback_answer = sports_kb_tool.run(question)
 
+    # If no key at all → immediate KB
     if not OPENROUTER_API_KEY:
-        return kb_answer
+        return fallback_answer
 
     llm = build_llm()
-    prompt = (
-        "You are a super friendly, energetic multi-sport coach for beginners.\n"
-        "Use the sports knowledge base info below plus the user's question to answer.\n\n"
-        f"User question: {question}\n"
-        f"Sports KB info: {kb_answer}\n\n"
-        "First line: short, direct answer in a friendly tone.\n"
-        "Then 3–6 short sentences with 1–2 practical tips or clarifications.\n"
-        "If something is outside this KB, still give a simple, best-effort explanation.\n"
-    )
+
+    # System + user messages so model is friendly and conversational
+    messages = [
+        (
+            "system",
+            "You are a super friendly, energetic multi-sport coach with internet access. "
+            "Answer using up-to-date sports knowledge from your training and any tools you have. "
+            "If the user just greets you (hi, hello, thanks, etc.), greet them back warmly "
+            "before giving any extra information.",
+        ),
+        ("user", question),
+    ]
+
+    # Convert to LangChain format
+    from langchain_core.messages import SystemMessage, HumanMessage  # type: ignore
+
+    lc_messages = [
+        SystemMessage(content=messages[0][1]),
+        HumanMessage(content=messages[1][1]),
+    ]
 
     try:
-        resp = llm.invoke(prompt)
+        resp = llm.invoke(lc_messages)
         return resp.content
     except Exception:
-        return kb_answer
+        # Any error → safe KB answer instead of crashing
+        return fallback_answer

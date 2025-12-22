@@ -11,13 +11,14 @@ st.set_page_config(
 )
 
 # -----------------------------
-# Global CSS: tighten layout
+# CSS – remove top line, tighten layout
 # -----------------------------
 st.markdown(
     """
     <style>
-    .block-container {
-        padding-top: 0.8rem;
+    header.stAppHeader {background-color: transparent; box-shadow: none;}
+    section.stMain .block-container {
+        padding-top: 0.4rem;
         padding-bottom: 0.8rem;
         max-width: 820px;
     }
@@ -37,13 +38,11 @@ st.markdown(
         font-size: 0.9rem;
         margin-bottom: 0.6rem;
     }
-    hr {
-        margin: 0.4rem 0 0.6rem 0;
-    }
+    hr { margin: 0.4rem 0 0.6rem 0; }
     </style>
     """,
     unsafe_allow_html=True,
-)  # [web:1100][web:1104]
+)  # [web:1134][web:1100]
 
 # -----------------------------
 # Card container
@@ -53,15 +52,15 @@ st.markdown('<div class="main-card">', unsafe_allow_html=True)
 st.markdown('<h1 class="main-title">🏅 Sports FAQ Bot</h1>', unsafe_allow_html=True)
 st.markdown(
     '<p class="subtext">'
-    'Ask anything about sports rules, equipment, training tips, or famous players across different sports. '
-    'This bot uses a sports knowledge base plus an OpenRouter-powered LLM.'
+    'Chat about sports rules, equipment, training tips, or famous players across different sports. '
+    'This bot uses an online OpenRouter model, with a small sports knowledge base as backup.'
     '</p>',
     unsafe_allow_html=True,
 )
 st.markdown("---")
 
 # -----------------------------
-# Chat history (scrolls above)
+# Chat history
 # -----------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -71,16 +70,18 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 # -----------------------------
-# Input – last element on page
+# Input (always last)
 # -----------------------------
-user_input = st.chat_input("Ask your sports question...")
+user_input = st.chat_input("Say hi or ask a sports question...")
 
 if user_input:
+    # Store user message
     st.session_state.messages.append({"role": "user", "content": user_input})
 
     with st.chat_message("user"):
         st.markdown(user_input)
 
+    # Assistant message
     with st.chat_message("assistant"):
         placeholder = st.empty()
         placeholder.markdown("_Thinking..._")
