@@ -11,22 +11,23 @@ st.set_page_config(
 )
 
 # -----------------------------
-# CSS – hide top header & tighten layout
+# CSS – remove top bar & gap
 # -----------------------------
 st.markdown(
     """
     <style>
-    /* Hide Streamlit's default top header and shadow */
-    header.stAppHeader {
-        background-color: transparent;
-        box-shadow: none;
+    /* Hide the entire built‑in header area */
+    header.stAppHeader, div[data-testid="stDecoration"] {
+        display: none;
     }
-    /* Reduce top whitespace and limit width */
-    section.stMain .block-container {
-        padding-top: 0.4rem;
+
+    /* Pull content up since header is gone */
+    section.stMain > div.block-container {
+        padding-top: 0.2rem;
         padding-bottom: 0.8rem;
         max-width: 820px;
     }
+
     .main-card {
         background-color: white;
         padding: 1.0rem 1.8rem 1.4rem 1.8rem;
@@ -49,7 +50,7 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True,
-)  # [web:1139][web:1100]
+)  # [web:1188][web:1100]
 
 # -----------------------------
 # Card container
@@ -77,12 +78,11 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 # -----------------------------
-# Input (always last, so it stays at bottom)
+# Input (bottom)
 # -----------------------------
 user_input = st.chat_input("Say hi or ask a sports question...")
 
 if user_input:
-    # Store user message
     st.session_state.messages.append({"role": "user", "content": user_input})
 
     with st.chat_message("user"):
@@ -101,3 +101,6 @@ if user_input:
         st.session_state.messages.append({"role": "assistant", "content": reply})
 
 st.markdown("</div>", unsafe_allow_html=True)
+
+
+
