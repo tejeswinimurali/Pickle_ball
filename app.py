@@ -11,12 +11,17 @@ st.set_page_config(
 )
 
 # -----------------------------
-# CSS – remove top line, tighten layout
+# CSS – hide top header & tighten layout
 # -----------------------------
 st.markdown(
     """
     <style>
-    header.stAppHeader {background-color: transparent; box-shadow: none;}
+    /* Hide Streamlit's default top header and shadow */
+    header.stAppHeader {
+        background-color: transparent;
+        box-shadow: none;
+    }
+    /* Reduce top whitespace and limit width */
     section.stMain .block-container {
         padding-top: 0.4rem;
         padding-bottom: 0.8rem;
@@ -38,11 +43,13 @@ st.markdown(
         font-size: 0.9rem;
         margin-bottom: 0.6rem;
     }
-    hr { margin: 0.4rem 0 0.6rem 0; }
+    hr {
+        margin: 0.4rem 0 0.6rem 0;
+    }
     </style>
     """,
     unsafe_allow_html=True,
-)  # [web:1134][web:1100]
+)  # [web:1139][web:1100]
 
 # -----------------------------
 # Card container
@@ -70,7 +77,7 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 # -----------------------------
-# Input (always last)
+# Input (always last, so it stays at bottom)
 # -----------------------------
 user_input = st.chat_input("Say hi or ask a sports question...")
 
@@ -81,7 +88,6 @@ if user_input:
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Assistant message
     with st.chat_message("assistant"):
         placeholder = st.empty()
         placeholder.markdown("_Thinking..._")
