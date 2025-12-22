@@ -1,28 +1,33 @@
 import streamlit as st
 from agent import run_agent
 
+# -----------------------------
+# Page config
+# -----------------------------
 st.set_page_config(
     page_title="Sports FAQ Bot",
     page_icon="🏅",
     layout="centered",
 )
 
+# -----------------------------
+# CSS – remove top bar & gap
+# -----------------------------
 st.markdown(
     """
     <style>
-    /* Kill ALL default header/toolbar/decoration, including background strip */
-    header[data-testid="stHeader"],
-    div[data-testid="stToolbar"],
-    div[data-testid="stDecoration"],
-    div[data-testid="stStatusWidget"] {
+    /* Hide Streamlit header / toolbar / decoration strip */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    div[data-testid="stToolbar"] {
+        display: none !important;
+    }
+    div[data-testid="stDecoration"] {
         display: none !important;
     }
 
-    /* Remove extra margin that was under the header */
-    section[data-testid="stMain"] {
-        padding-top: 0 !important;
-    }
-
+    /* Pull main app up and set width */
     section[data-testid="stMain"] > div.block-container {
         padding-top: 0.1rem;
         padding-bottom: 0.8rem;
@@ -53,6 +58,9 @@ st.markdown(
     unsafe_allow_html=True,
 )  # [web:1179][web:1100]
 
+# -----------------------------
+# Card container
+# -----------------------------
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
 
 st.markdown('<h1 class="main-title">🏅 Sports FAQ Bot</h1>', unsafe_allow_html=True)
@@ -65,4 +73,37 @@ st.markdown(
 )
 st.markdown("---")
 
-# chat history + input exactly as you already have below...
+# -----------------------------
+# Chat history
+# -----------------------------
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+# -----------------------------
+# Input (always last)
+# -----------------------------
+user_input = st.chat_input("Say hi or ask a sports question...")
+
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
+    with st.chat_message("assistant"):
+        placeholder = st.empty()
+        placeholder.markdown("_Thinking..._")
+
+        try:
+            reply = run_agent(user_input)
+        except Exception as e:
+            reply = f"Sorry, something went wrong: {e}"
+
+        placeholder.markdown(reply)
+        st.session_state.messages.append({"role": "assistant", "content": reply})
+
+st.markdown("</div>", unsafe_allow_html=True)
