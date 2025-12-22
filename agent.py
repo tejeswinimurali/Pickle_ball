@@ -9,8 +9,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-# Use a free / unpaid model
-MODEL_NAME = "meta-llama/llama-3.1-8b-instruct:free"  # [web:1063][web:1074]
+# Free OpenRouter model
+MODEL_NAME = "meta-llama/llama-3.1-8b-instruct:free"  # [web:1074]
 
 # ---------- Knowledge base ----------
 
@@ -115,8 +115,8 @@ SPORTS_KB: Dict[str, Dict[str, str]] = {
             "2–3 times per week."
         ),
         "fitness": (
-            "Combine cardio (jogging, cycling), strength work (bodyweight or light weights), "
-            "and mobility exercises to support performance and reduce injury risk."
+            "Combine cardio, strength work, and mobility exercises to support performance "
+            "and reduce injury risk."
         ),
         "mindset": (
             "Set small, realistic goals, track progress, and remember improvement takes time. "
@@ -245,19 +245,17 @@ def build_llm() -> ChatOpenAI:
         openai_api_base=OPENROUTER_BASE_URL,
         temperature=0.7,
         max_tokens=220,
-    )  # [web:1090]
+    )  # [web:1085]
 
 
 def run_agent(question: str) -> str:
     """
-    Simple 'agentic' behavior:
-    - Always fetch KB info with the tool.
-    - Let the LLM turn it into a friendly answer when online.
-    - If online fails, fall back cleanly to the KB answer.
+    - Always get KB info.
+    - Use LLM to turn it into a friendly answer when online.
+    - If online fails, fall back to KB answer.
     """
     kb_answer = sports_kb_tool.run(question)
 
-    # Pure KB mode if key is missing
     if not OPENROUTER_API_KEY:
         return kb_answer
 
@@ -269,13 +267,11 @@ def run_agent(question: str) -> str:
         f"Sports KB info: {kb_answer}\n\n"
         "First line: short, direct answer in a friendly tone.\n"
         "Then 3–6 short sentences with 1–2 practical tips or clarifications.\n"
-        "If something is outside this KB, still give a simple, best-effort explanation "
-        "based on general sports knowledge.\n"
+        "If something is outside this KB, still give a simple, best-effort explanation.\n"
     )
 
     try:
         resp = llm.invoke(prompt)
         return resp.content
     except Exception:
-        # If online model fails (including 402 Payment Required), fall back to KB
         return kb_answer
