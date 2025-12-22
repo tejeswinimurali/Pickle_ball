@@ -2,6 +2,8 @@ import os
 import requests
 import streamlit as st
 
+from agent import run_agent  # make sure this import path is correct
+
 # -----------------------------
 # Page config
 # -----------------------------
@@ -52,19 +54,13 @@ with st.container():
     )
 
     # -----------------------------
-    # Small GIF under intro
+    # Small GIF under intro (online, no local file needed)
     # -----------------------------
-    # Option A: local GIF (put sports.gif in same folder as app.py)
-    # Replace this line:
-# st.image("sports.gif", caption="Let's talk sports!", width=220)
-
-# With this (online GIF, no local file needed):
     st.image(
-        "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z/sports-ball-gif.gif",
-        caption="Let's talk sports!",
+        "https://media.giphy.com/media/l0HlRnAWXxn0MhKLK/giphy.gif",
+        caption="Let’s talk sports!",
         width=220,
-    )
-
+    )  # [web:1051]
 
     st.markdown("---")
 
@@ -74,8 +70,10 @@ with st.container():
     with st.sidebar:
         st.header("Settings")
         model = st.selectbox(
-            "Model",
-            ["meta-llama/llama-3.1-70b-instruct", "gpt-4.1-mini"],
+            "Model (display only, main logic uses free Llama 3.1 8B)",
+            [
+                "meta-llama/llama-3.1-8b-instruct:free",
+            ],
             index=0,
         )
         temperature = st.slider("Creativity (temperature)", 0.0, 1.5, 0.7, 0.1)
@@ -103,48 +101,14 @@ with st.container():
             st.markdown(user_input)
 
         # -----------------------------
-        # Call OpenRouter
+        # Call agent (handles KB + OpenRouter)
         # -----------------------------
         with st.chat_message("assistant"):
             placeholder = st.empty()
             placeholder.markdown("_Thinking..._")
 
             try:
-                OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-                headers = {
-                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                    "Content-Type": "application/json",
-                }
-
-                # System prompt now generic sports FAQ
-                system_message = {
-                    "role": "system",
-                    "content": (
-                        "You are a helpful sports expert assistant. "
-                        "Answer questions about rules, equipment, training, strategies, "
-                        "injury prevention, and famous players across different sports. "
-                        "Explain clearly and keep answers suitable for beginners."
-                    ),
-                }
-
-                payload = {
-                    "model": model,
-                    "messages": [
-                        system_message,
-                        *st.session_state.messages,
-                    ],
-                    "temperature": temperature,
-                }
-
-                resp = requests.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers=headers,
-                    json=payload,
-                    timeout=60,
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                reply = data["choices"][0]["message"]["content"]
+                reply = run_agent(user_input)
             except Exception as e:
                 reply = f"Sorry, something went wrong: {e}"
 

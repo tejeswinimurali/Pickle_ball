@@ -9,7 +9,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-MODEL_NAME = "openrouter/auto:online"
+# Use a free / unpaid model
+MODEL_NAME = "meta-llama/llama-3.1-8b-instruct:free"  # [web:1063][web:1074]
 
 # ---------- Knowledge base ----------
 
@@ -139,6 +140,7 @@ SPORTS_KB: Dict[str, Dict[str, str]] = {
     },
 }
 
+
 def search_kb(question: str) -> str:
     q = question.lower()
 
@@ -162,8 +164,7 @@ def search_kb(question: str) -> str:
 
     # Football
     if "football" in q or "soccer" in q:
-        pieces = []
-        pieces.append(SPORTS_KB["football"]["basic_rules"])
+        pieces = [SPORTS_KB["football"]["basic_rules"]]
         if "equipment" in q or "need" in q:
             pieces.append(SPORTS_KB["football"]["equipment"])
         if "time" in q or "how long" in q or "duration" in q:
@@ -230,10 +231,12 @@ def search_kb(question: str) -> str:
         ]
     )
 
+
 @tool
 def sports_kb_tool(question: str) -> str:
     """Answer sports questions from a curated knowledge base of rules, tips, equipment, and famous players across multiple sports."""
     return search_kb(question)
+
 
 def build_llm() -> ChatOpenAI:
     return ChatOpenAI(
@@ -242,7 +245,8 @@ def build_llm() -> ChatOpenAI:
         openai_api_base=OPENROUTER_BASE_URL,
         temperature=0.7,
         max_tokens=220,
-    )  # [web:991][web:1031]
+    )  # [web:1090]
+
 
 def run_agent(question: str) -> str:
     """
@@ -273,5 +277,5 @@ def run_agent(question: str) -> str:
         resp = llm.invoke(prompt)
         return resp.content
     except Exception:
-        # If online model fails, fall back to KB only
+        # If online model fails (including 402 Payment Required), fall back to KB
         return kb_answer
