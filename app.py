@@ -1,5 +1,5 @@
 import streamlit as st
-from agent import run_agent  # same folder as this file
+from agent import run_agent
 
 # -----------------------------
 # Page config
@@ -11,12 +11,11 @@ st.set_page_config(
 )
 
 # -----------------------------
-# Global CSS to tighten layout
+# Global CSS (tight top, no GIF)
 # -----------------------------
 st.markdown(
     """
     <style>
-    /* Reduce top white space */
     .block-container {
         padding-top: 1.2rem;
         padding-bottom: 2rem;
@@ -38,22 +37,16 @@ st.markdown(
         font-size: 0.95rem;
         margin-bottom: 0.8rem;
     }
-    .gif-wrapper {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 0.5rem;
-    }
     </style>
     """,
     unsafe_allow_html=True,
-)  # [web:1100][web:1104]
+)
 
 # -----------------------------
 # Card container
 # -----------------------------
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
 
-# Header
 st.markdown('<h1 class="main-title">🏅 Sports FAQ Bot</h1>', unsafe_allow_html=True)
 
 st.markdown(
@@ -64,19 +57,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# GIF
-st.markdown('<div class="gif-wrapper">', unsafe_allow_html=True)
-st.image(
-    "https://media.giphy.com/media/l0HlRnAWXxn0MhKLK/giphy.gif",
-    caption="Let’s talk sports!",
-    width=180,
-)
-st.markdown("</div>", unsafe_allow_html=True)
-
 st.markdown("---")
 
 # -----------------------------
-# Chat history
+# Chat history (shown first)
 # -----------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -86,10 +70,12 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 # -----------------------------
-# User input + agent call
+# Input always at bottom
 # -----------------------------
 user_input = st.chat_input("Ask your sports question...")
+
 if user_input:
+    # Add user message
     st.session_state.messages.append({"role": "user", "content": user_input})
 
     with st.chat_message("user"):
@@ -108,3 +94,6 @@ if user_input:
         st.session_state.messages.append({"role": "assistant", "content": reply})
 
 st.markdown("</div>", unsafe_allow_html=True)
+
+
+

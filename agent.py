@@ -9,8 +9,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-# Free OpenRouter model
-MODEL_NAME = "meta-llama/llama-3.1-8b-instruct:free"  # [web:1074]
+MODEL_NAME = "meta-llama/llama-3.1-8b-instruct:free"
 
 # ---------- Knowledge base ----------
 
@@ -37,11 +36,11 @@ SPORTS_KB: Dict[str, Dict[str, str]] = {
             "Football (soccer) is played by two teams of 11 players. "
             "You score by getting the ball into the opponent's goal using any body part "
             "except hands and arms, unless you are the goalkeeper."
-        ),  # [web:1025]
+        ),
         "equipment": (
             "Basic football equipment: a football, jerseys, shorts, socks, shin guards, and boots "
             "with studs or cleats for grip on the pitch."
-        ),  # [web:1034]
+        ),
         "duration": (
             "A standard match is 90 minutes, split into two 45-minute halves, "
             "plus stoppage time added by the referee."
@@ -85,7 +84,7 @@ SPORTS_KB: Dict[str, Dict[str, str]] = {
         "equipment": (
             "You need a tennis racket, tennis balls, and a court with a net. "
             "Tennis shoes with good lateral support are recommended."
-        ),  # [web:1037]
+        ),
         "famous_players": (
             "Famous tennis players include Roger Federer, Rafael Nadal, "
             "Novak Djokovic, Serena Williams, and Iga Świątek."
@@ -101,7 +100,7 @@ SPORTS_KB: Dict[str, Dict[str, str]] = {
         "equipment": (
             "Key cricket equipment: bat, hard leather ball, stumps and bails, "
             "protective pads, gloves, helmet, and appropriate footwear."
-        ),  # [web:1040]
+        ),
         "famous_players": (
             "Well-known cricketers include Sachin Tendulkar, Virat Kohli, "
             "MS Dhoni, Ben Stokes, and Ellyse Perry."
@@ -144,7 +143,6 @@ SPORTS_KB: Dict[str, Dict[str, str]] = {
 def search_kb(question: str) -> str:
     q = question.lower()
 
-    # General sports questions
     if "what is sport" in q or ("what is" in q and "sport" in q):
         return " ".join(
             [
@@ -162,7 +160,6 @@ def search_kb(question: str) -> str:
             ]
         )
 
-    # Football
     if "football" in q or "soccer" in q:
         pieces = [SPORTS_KB["football"]["basic_rules"]]
         if "equipment" in q or "need" in q:
@@ -175,7 +172,6 @@ def search_kb(question: str) -> str:
             pieces.append(SPORTS_KB["football"]["famous_players"])
         return " ".join(pieces)
 
-    # Basketball
     if "basketball" in q:
         pieces = [SPORTS_KB["basketball"]["basic_rules"]]
         if "equipment" in q or "need" in q:
@@ -186,7 +182,6 @@ def search_kb(question: str) -> str:
             pieces.append(SPORTS_KB["basketball"]["famous_players"])
         return " ".join(pieces)
 
-    # Tennis
     if "tennis" in q:
         pieces = [SPORTS_KB["tennis"]["basic_rules"]]
         if "equipment" in q or "need" in q:
@@ -195,7 +190,6 @@ def search_kb(question: str) -> str:
             pieces.append(SPORTS_KB["tennis"]["famous_players"])
         return " ".join(pieces)
 
-    # Cricket
     if "cricket" in q:
         pieces = [SPORTS_KB["cricket"]["basic_rules"]]
         if "equipment" in q or "need" in q:
@@ -204,14 +198,12 @@ def search_kb(question: str) -> str:
             pieces.append(SPORTS_KB["cricket"]["famous_players"])
         return " ".join(pieces)
 
-    # Training / fitness / generic tips
     if "tip" in q or "improve" in q or "practice" in q or "training" in q:
         return " ".join(SPORTS_KB["training_tips"].values())
 
     if "injury" in q or "hurt" in q or "pain" in q or "safe" in q:
         return " ".join(SPORTS_KB["injury_prevention"].values())
 
-    # Famous players – generic
     if "famous" in q or "best player" in q or "legend" in q:
         return " ".join(
             [
@@ -222,7 +214,6 @@ def search_kb(question: str) -> str:
             ]
         )
 
-    # Fallback: general sports info
     return "General sports info: " + " ".join(
         [
             SPORTS_KB["general"]["what_is_sport"],
@@ -245,15 +236,10 @@ def build_llm() -> ChatOpenAI:
         openai_api_base=OPENROUTER_BASE_URL,
         temperature=0.7,
         max_tokens=220,
-    )  # [web:1085]
+    )
 
 
 def run_agent(question: str) -> str:
-    """
-    - Always get KB info.
-    - Use LLM to turn it into a friendly answer when online.
-    - If online fails, fall back to KB answer.
-    """
     kb_answer = sports_kb_tool.run(question)
 
     if not OPENROUTER_API_KEY:
