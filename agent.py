@@ -13,201 +13,227 @@ MODEL_NAME = "openrouter/auto:online"
 
 # ---------- Knowledge base ----------
 
-PICKLEBALL_KB: Dict[str, Dict[str, str]] = {
-    "rules": {
-        "scoring": (
-            "Standard games go to 11 points, win by 2. "
-            "Only the serving team can score, and you call score as "
-            "server score, receiver score, server number."
-        ),
-        "serving": (
-            "Serve underhand from behind the baseline, diagonally cross-court, "
-            "and the ball must clear the non-volley zone (kitchen) including the line."
-        ),
-        "two_bounce": (
-            "After the serve, the ball must bounce once on the return and once on the next shot "
-            "before anyone can volley. This is the two-bounce rule."
-        ),
-        "kitchen": (
-            "The kitchen (non-volley zone) is a 7-foot area by the net. "
-            "You may step in to hit a ball that has bounced, but you cannot volley "
-            "while touching it or its line."
-        ),
-        "faults": (
-            "Common faults: serve lands in the kitchen, ball out of bounds, ball into the net, "
-            "ball bounces twice, or volleying from the kitchen."
-        ),
-        "singles_doubles": (
-            "Singles is 1 vs 1, doubles is 2 vs 2. "
-            "Serving order and court positioning change slightly, "
-            "but the main rules are the same."
-        ),
-        "let_serve": (
-            "Most modern play does not use lets on serves. If the serve clips the net "
-            "but lands correctly, the ball is still in play."
-        ),
-    },
-    "equipment": {
-        "ball": (
-            "A pickleball is a light plastic ball with holes. "
-            "Outdoor balls are a bit harder with smaller holes; "
-            "indoor balls are softer with larger holes."
-        ),
-        "paddle": (
-            "Paddles are solid, usually composite or graphite, "
-            "bigger than a ping-pong paddle and smaller than a tennis racket."
-        ),
-        "court": (
-            "The court is 20 by 44 feet with a 7-foot non-volley zone on each side of the net. "
-            "The same court size is used for singles and doubles."
-        ),
-        "shoes": (
-            "Court shoes with good lateral support are best. "
-            "Running shoes are not ideal because they are built for straight-line motion."
-        ),
-    },
-    "tips": {
-        "consistency": (
-            "Play high-percentage shots: clear the net with a safe margin and keep the ball in. "
-            "Winning at beginner level is mostly about fewer unforced errors."
-        ),
-        "dink": (
-            "Practice soft dinks into the kitchen to slow the game down and force your opponents "
-            "to hit up. Think smooth, relaxed swings rather than big power."
-        ),
-        "third_shot": (
-            "On your team’s third shot, aim for a soft drop into the kitchen instead of blasting it. "
-            "That gives you time to move to the net."
-        ),
-        "positioning": (
-            "Try to get both partners up to the non-volley line together. "
-            "Playing from the baseline all the time puts you at a big disadvantage."
-        ),
-        "communication": (
-            "In doubles, call balls that are yours, shout 'mine' or 'yours', and decide in advance "
-            "who takes middle balls and lobs."
-        ),
-        "footwork": (
-            "Stay light on your feet, take small adjustment steps, "
-            "and avoid crossing your feet when moving sideways."
-        ),
-    },
-    "players": {
-        "ben_johns": (
-            "Ben Johns is one of the most successful pro pickleball players, "
-            "known for his balanced offense and defense and multiple titles "
-            "in singles and doubles."
-        ),
-        "anna_leigh_waters": (
-            "Anna Leigh Waters is a top women's pro, famous for her aggressive style "
-            "and dominance in singles, doubles, and mixed doubles."
-        ),
-        "other_notable": (
-            "Other notable pros include Tyson McGuffin, JW Johnson, "
-            "Riley Newman, and Catherine Parenteau."
-        ),
-    },
+SPORTS_KB: Dict[str, Dict[str, str]] = {
     "general": {
-        "what_is": (
-            "Pickleball is a paddle sport that mixes elements of tennis, badminton, "
-            "and table tennis, played on a small court with a perforated plastic ball."
+        "what_is_sport": (
+            "Sport is any kind of physical activity or game that usually involves "
+            "individuals or teams competing against each other for fun, exercise, "
+            "or organized competition."
         ),
-        "history": (
-            "Pickleball began in 1965 on Bainbridge Island, Washington, "
-            "as a backyard family game and has grown into a global sport with pro tours."
+        "benefits": (
+            "Playing sports improves fitness, coordination, and mental health. "
+            "It helps with discipline, teamwork, managing stress, and building confidence."
         ),
-        "popularity": (
-            "Pickleball is one of the fastest-growing sports, with millions of players "
-            "and new courts popping up in parks, gyms, and clubs."
+        "types": (
+            "There are many types of sports: team sports like football and basketball, "
+            "racket sports like tennis and badminton, bat-and-ball sports like cricket and baseball, "
+            "and individual sports like athletics and swimming."
         ),
-        "players_needed": (
-            "You usually play pickleball with 2 players for singles (1 on each side) "
-            "or 4 players for doubles (2 on each side)."
+    },
+
+    "football": {
+        "basic_rules": (
+            "Football (soccer) is played by two teams of 11 players. "
+            "You score by getting the ball into the opponent's goal using any body part "
+            "except hands and arms, unless you are the goalkeeper."
+        ),  # [web:1025]
+        "equipment": (
+            "Basic football equipment: a football, jerseys, shorts, socks, shin guards, and boots "
+            "with studs or cleats for grip on the pitch."
+        ),  # [web:1034]
+        "duration": (
+            "A standard match is 90 minutes, split into two 45-minute halves, "
+            "plus stoppage time added by the referee."
+        ),
+        "fouls": (
+            "Fouls are given for actions like tripping, pushing, or handball. "
+            "Serious fouls can result in yellow or red cards."
+        ),
+        "famous_players": (
+            "Some famous footballers include Lionel Messi, Cristiano Ronaldo, "
+            "Neymar Jr, Kylian Mbappé, and Sunil Chhetri."
+        ),
+    },
+
+    "basketball": {
+        "basic_rules": (
+            "Basketball is played by two teams of five players on the court. "
+            "You score by throwing the ball through the opponent's hoop. "
+            "You must dribble while moving; carrying or double-dribbling is not allowed."
+        ),
+        "equipment": (
+            "You need a basketball, an indoor or outdoor court with hoops, "
+            "and supportive court shoes for quick changes of direction."
+        ),
+        "duration": (
+            "Games are usually played in four quarters, each commonly 10 or 12 minutes long "
+            "depending on the league."
+        ),
+        "famous_players": (
+            "Famous basketball players include Michael Jordan, LeBron James, "
+            "Kobe Bryant, Stephen Curry, and Giannis Antetokounmpo."
+        ),
+    },
+
+    "tennis": {
+        "basic_rules": (
+            "Tennis can be played singles (1 vs 1) or doubles (2 vs 2). "
+            "Players hit a ball over a net into the opponent's court. "
+            "Points follow the sequence 15, 30, 40, and game."
+        ),
+        "equipment": (
+            "You need a tennis racket, tennis balls, and a court with a net. "
+            "Tennis shoes with good lateral support are recommended."
+        ),  # [web:1037]
+        "famous_players": (
+            "Famous tennis players include Roger Federer, Rafael Nadal, "
+            "Novak Djokovic, Serena Williams, and Iga Świątek."
+        ),
+    },
+
+    "cricket": {
+        "basic_rules": (
+            "Cricket is played between two teams of eleven players. "
+            "One team bats to score runs, while the other bowls and fields to restrict runs "
+            "and dismiss batters."
+        ),
+        "equipment": (
+            "Key cricket equipment: bat, hard leather ball, stumps and bails, "
+            "protective pads, gloves, helmet, and appropriate footwear."
+        ),  # [web:1040]
+        "famous_players": (
+            "Well-known cricketers include Sachin Tendulkar, Virat Kohli, "
+            "MS Dhoni, Ben Stokes, and Ellyse Perry."
+        ),
+    },
+
+    "training_tips": {
+        "beginners": (
+            "If you are new to sports, start with simple drills, warm up properly, "
+            "and focus on technique before intensity. Aim for consistent practice "
+            "2–3 times per week."
+        ),
+        "fitness": (
+            "Combine cardio (jogging, cycling), strength work (bodyweight or light weights), "
+            "and mobility exercises to support performance and reduce injury risk."
+        ),
+        "mindset": (
+            "Set small, realistic goals, track progress, and remember improvement takes time. "
+            "Focus on learning and enjoyment, not just winning."
+        ),
+    },
+
+    "injury_prevention": {
+        "warmup": (
+            "Always warm up 5–10 minutes with light movement and dynamic stretches "
+            "before playing to prepare your muscles and joints."
+        ),
+        "cooldown": (
+            "Cool down after playing with easy walking and stretching to help recovery "
+            "and reduce stiffness."
+        ),
+        "safety": (
+            "Use appropriate protective gear, stay hydrated, and stop if you feel sharp pain. "
+            "Rest and proper technique are key to avoiding overuse injuries."
         ),
     },
 }
 
-
 def search_kb(question: str) -> str:
     q = question.lower()
-    q = q.replace("pickle ball", "pickleball")
 
-    if (
-        "explain pickleball" in q
-        or "pickleball game" in q
-        or ("what is" in q and "pickleball" in q)
-        or (q.strip() == "pickleball")
-    ):
+    # General sports questions
+    if "what is sport" in q or ("what is" in q and "sport" in q):
         return " ".join(
             [
-                PICKLEBALL_KB["general"]["what_is"],
-                PICKLEBALL_KB["rules"]["scoring"],
-                PICKLEBALL_KB["rules"]["serving"],
+                SPORTS_KB["general"]["what_is_sport"],
+                SPORTS_KB["general"]["types"],
+                SPORTS_KB["general"]["benefits"],
             ]
         )
 
-    if "how many players" in q or ("players" in q and "needed" in q):
-        return PICKLEBALL_KB["general"]["players_needed"]
-
-    if "beginner" in q or "first time" in q or "new to pickleball" in q:
+    if "benefit" in q or "good for health" in q or "why play sports" in q:
         return " ".join(
             [
-                PICKLEBALL_KB["general"]["what_is"],
-                PICKLEBALL_KB["rules"]["scoring"],
-                PICKLEBALL_KB["tips"]["consistency"],
+                SPORTS_KB["general"]["benefits"],
+                SPORTS_KB["training_tips"]["beginners"],
             ]
         )
 
-    if "famous" in q or "best" in q or "pro" in q or "professional" in q:
-        return " ".join(PICKLEBALL_KB["players"].values())
+    # Football
+    if "football" in q or "soccer" in q:
+        pieces = []
+        pieces.append(SPORTS_KB["football"]["basic_rules"])
+        if "equipment" in q or "need" in q:
+            pieces.append(SPORTS_KB["football"]["equipment"])
+        if "time" in q or "how long" in q or "duration" in q:
+            pieces.append(SPORTS_KB["football"]["duration"])
+        if "foul" in q or "card" in q:
+            pieces.append(SPORTS_KB["football"]["fouls"])
+        if "famous" in q or "best" in q or "player" in q:
+            pieces.append(SPORTS_KB["football"]["famous_players"])
+        return " ".join(pieces)
 
-    if "tip" in q or "improve" in q or "strategy" in q or "drill" in q:
-        return " ".join(PICKLEBALL_KB["tips"].values())
+    # Basketball
+    if "basketball" in q:
+        pieces = [SPORTS_KB["basketball"]["basic_rules"]]
+        if "equipment" in q or "need" in q:
+            pieces.append(SPORTS_KB["basketball"]["equipment"])
+        if "time" in q or "how long" in q or "duration" in q:
+            pieces.append(SPORTS_KB["basketball"]["duration"])
+        if "famous" in q or "best" in q or "player" in q:
+            pieces.append(SPORTS_KB["basketball"]["famous_players"])
+        return " ".join(pieces)
 
-    if "what is pickleball" in q or ("what" in q and "pickleball" in q):
-        return PICKLEBALL_KB["general"]["what_is"]
-    if "history" in q:
-        return PICKLEBALL_KB["general"]["history"]
-    if "popular" in q or "popularity" in q or "growing" in q:
-        return PICKLEBALL_KB["general"]["popularity"]
+    # Tennis
+    if "tennis" in q:
+        pieces = [SPORTS_KB["tennis"]["basic_rules"]]
+        if "equipment" in q or "need" in q:
+            pieces.append(SPORTS_KB["tennis"]["equipment"])
+        if "famous" in q or "best" in q or "player" in q:
+            pieces.append(SPORTS_KB["tennis"]["famous_players"])
+        return " ".join(pieces)
 
-    if "two bounce" in q or "double bounce" in q:
-        return PICKLEBALL_KB["rules"]["two_bounce"]
-    if "kitchen" in q or "non-volley" in q or "nvz" in q:
-        return PICKLEBALL_KB["rules"]["kitchen"]
-    if "score" in q or "scoring" in q or "points" in q:
-        return PICKLEBALL_KB["rules"]["scoring"]
-    if "serve" in q or "serving" in q or "server" in q:
-        return PICKLEBALL_KB["rules"]["serving"]
-    if "fault" in q or "error" in q or "violation" in q:
-        return PICKLEBALL_KB["rules"]["faults"]
-    if "let" in q and "serve" in q:
-        return PICKLEBALL_KB["rules"]["let_serve"]
-    if "single" in q or "doubles" in q:
-        return PICKLEBALL_KB["rules"]["singles_doubles"]
+    # Cricket
+    if "cricket" in q:
+        pieces = [SPORTS_KB["cricket"]["basic_rules"]]
+        if "equipment" in q or "need" in q:
+            pieces.append(SPORTS_KB["cricket"]["equipment"])
+        if "famous" in q or "best" in q or "player" in q:
+            pieces.append(SPORTS_KB["cricket"]["famous_players"])
+        return " ".join(pieces)
 
-    if "paddle" in q:
-        return PICKLEBALL_KB["equipment"]["paddle"]
-    if "ball" in q:
-        return PICKLEBALL_KB["equipment"]["ball"]
-    if "court" in q or "dimension" in q or "size" in q:
-        return PICKLEBALL_KB["equipment"]["court"]
-    if "shoe" in q or "shoes" in q:
-        return PICKLEBALL_KB["equipment"]["shoes"]
+    # Training / fitness / generic tips
+    if "tip" in q or "improve" in q or "practice" in q or "training" in q:
+        return " ".join(SPORTS_KB["training_tips"].values())
 
-    return "General pickleball info: " + " ".join(
+    if "injury" in q or "hurt" in q or "pain" in q or "safe" in q:
+        return " ".join(SPORTS_KB["injury_prevention"].values())
+
+    # Famous players – generic
+    if "famous" in q or "best player" in q or "legend" in q:
+        return " ".join(
+            [
+                SPORTS_KB["football"]["famous_players"],
+                SPORTS_KB["basketball"]["famous_players"],
+                SPORTS_KB["tennis"]["famous_players"],
+                SPORTS_KB["cricket"]["famous_players"],
+            ]
+        )
+
+    # Fallback: general sports info
+    return "General sports info: " + " ".join(
         [
-            PICKLEBALL_KB["general"]["what_is"],
-            PICKLEBALL_KB["general"]["popularity"],
+            SPORTS_KB["general"]["what_is_sport"],
+            SPORTS_KB["general"]["types"],
+            SPORTS_KB["general"]["benefits"],
         ]
     )
 
-
 @tool
-def pickleball_kb_tool(question: str) -> str:
-    """Answer pickleball questions from a curated knowledge base of rules, tips, equipment, and players."""
+def sports_kb_tool(question: str) -> str:
+    """Answer sports questions from a curated knowledge base of rules, tips, equipment, and famous players across multiple sports."""
     return search_kb(question)
-
 
 def build_llm() -> ChatOpenAI:
     return ChatOpenAI(
@@ -216,29 +242,36 @@ def build_llm() -> ChatOpenAI:
         openai_api_base=OPENROUTER_BASE_URL,
         temperature=0.7,
         max_tokens=220,
-    )
-
+    )  # [web:991][web:1031]
 
 def run_agent(question: str) -> str:
     """
     Simple 'agentic' behavior:
     - Always fetch KB info with the tool.
-    - Let the LLM turn it into a friendly answer.
+    - Let the LLM turn it into a friendly answer when online.
+    - If online fails, fall back cleanly to the KB answer.
     """
-    kb_answer = pickleball_kb_tool.run(question)
+    kb_answer = sports_kb_tool.run(question)
 
+    # Pure KB mode if key is missing
     if not OPENROUTER_API_KEY:
-        # KB-only fallback
         return kb_answer
 
     llm = build_llm()
     prompt = (
-        "You are a super friendly, energetic pickleball coach for beginners.\n"
-        "Use the KB info below plus the user's question to answer.\n\n"
+        "You are a super friendly, energetic multi-sport coach for beginners.\n"
+        "Use the sports knowledge base info below plus the user's question to answer.\n\n"
         f"User question: {question}\n"
-        f"KB info: {kb_answer}\n\n"
+        f"Sports KB info: {kb_answer}\n\n"
         "First line: short, direct answer in a friendly tone.\n"
-        "Then 3–6 short sentences with 1–2 practical tips.\n"
+        "Then 3–6 short sentences with 1–2 practical tips or clarifications.\n"
+        "If something is outside this KB, still give a simple, best-effort explanation "
+        "based on general sports knowledge.\n"
     )
-    resp = llm.invoke(prompt)
-    return resp.content
+
+    try:
+        resp = llm.invoke(prompt)
+        return resp.content
+    except Exception:
+        # If online model fails, fall back to KB only
+        return kb_answer

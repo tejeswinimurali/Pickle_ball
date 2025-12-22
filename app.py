@@ -1,60 +1,156 @@
-# app.py
 import os
+import requests
 import streamlit as st
 
-from agent import run_agent, OPENROUTER_API_KEY
+# -----------------------------
+# Page config
+# -----------------------------
+st.set_page_config(
+    page_title="Sports FAQ Bot",
+    page_icon="🏅",
+    layout="centered",
+)  # [web:995]
 
-st.set_page_config(page_title="Pickleball FAQ Coach", page_icon="🏓")
+# Optional: light styling for a white card in the center
+st.markdown(
+    """
+    <style>
+    .main-card {
+        background-color: white;
+        padding: 1.5rem 2rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .main-title {
+        text-align: center;
+    }
+    .subtext {
+        text-align: center;
+        color: #555555;
+        font-size: 0.95rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)  # [web:961]
 
-st.title("Pickleball FAQ Coach 🏓")
-st.write(
-    "Ask anything about pickleball rules, equipment, tips, or famous players. "
-    "This bot uses a pickleball knowledge base plus an OpenRouter-powered LLM."
-)
+# Wrap whole UI in a "card"
+with st.container():
+    st.markdown('<div class="main-card">', unsafe_allow_html=True)
 
-# Environment warning
-if not OPENROUTER_API_KEY:
-    st.warning(
-        "OPENROUTER_API_KEY is not set on this deployment. "
-        "The bot may rely more on simple KB-style answers."
+    # -----------------------------
+    # Header
+    # -----------------------------
+    st.markdown('<h1 class="main-title">🏅 Sports FAQ Bot</h1>', unsafe_allow_html=True)
+
+    st.markdown(
+        '<p class="subtext">'
+        'Ask anything about sports rules, equipment, training tips, or famous players across different sports. '
+        'This bot uses a sports knowledge base plus an OpenRouter-powered LLM.'
+        '</p>',
+        unsafe_allow_html=True,
     )
 
-# Simple chat UI
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+    # -----------------------------
+    # Small GIF under intro
+    # -----------------------------
+    # Option A: local GIF (put sports.gif in same folder as app.py)
+    # Replace this line:
+# st.image("sports.gif", caption="Let's talk sports!", width=220)
 
-for role, content in st.session_state.messages:
-    with st.chat_message(role):
-        st.markdown(content)
+# With this (online GIF, no local file needed):
+    st.image(
+        "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z/sports-ball-gif.gif",
+        caption="Let's talk sports!",
+        width=220,
+    )
 
-user_input = st.chat_input("Ask a pickleball question...")
-if user_input:
-    # Show user message
-    st.session_state.messages.append(("user", user_input))
-    with st.chat_message("user"):
-        st.markdown(user_input)
 
-    # Run agent
-    with st.chat_message("assistant"):
-        with st.spinner("Coach is thinking..."):
+    st.markdown("---")
+
+    # -----------------------------
+    # Sidebar settings
+    # -----------------------------
+    with st.sidebar:
+        st.header("Settings")
+        model = st.selectbox(
+            "Model",
+            ["meta-llama/llama-3.1-70b-instruct", "gpt-4.1-mini"],
+            index=0,
+        )
+        temperature = st.slider("Creativity (temperature)", 0.0, 1.5, 0.7, 0.1)
+
+    # -----------------------------
+    # Chat history
+    # -----------------------------
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # Show chat history
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # -----------------------------
+    # User input
+    # -----------------------------
+    user_input = st.chat_input("Ask your sports question...")
+    if user_input:
+        # Add user message
+        st.session_state.messages.append({"role": "user", "content": user_input})
+
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+        # -----------------------------
+        # Call OpenRouter
+        # -----------------------------
+        with st.chat_message("assistant"):
+            placeholder = st.empty()
+            placeholder.markdown("_Thinking..._")
+
             try:
-                answer = run_agent(user_input)
-            except Exception as e:
-                answer = (
-                    "Oops, something went wrong with the online model. "
-                    "Here is a basic KB answer instead.\n\n"
+                OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+                headers = {
+                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "Content-Type": "application/json",
+                }
+
+                # System prompt now generic sports FAQ
+                system_message = {
+                    "role": "system",
+                    "content": (
+                        "You are a helpful sports expert assistant. "
+                        "Answer questions about rules, equipment, training, strategies, "
+                        "injury prevention, and famous players across different sports. "
+                        "Explain clearly and keep answers suitable for beginners."
+                    ),
+                }
+
+                payload = {
+                    "model": model,
+                    "messages": [
+                        system_message,
+                        *st.session_state.messages,
+                    ],
+                    "temperature": temperature,
+                }
+
+                resp = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=60,
                 )
-                # Optional: you could call search_kb here directly if you import it.
+                resp.raise_for_status()
+                data = resp.json()
+                reply = data["choices"][0]["message"]["content"]
+            except Exception as e:
+                reply = f"Sorry, something went wrong: {e}"
 
-            st.markdown(answer)
-            st.session_state.messages.append(("assistant", answer))
+            placeholder.markdown(reply)
 
-st.sidebar.header("How to use")
-st.sidebar.markdown(
-    """
-- Ask about **rules**: kitchen, scoring, serving, faults.
-- Ask for **tips**: dinks, third shot, positioning, drills.
-- Ask about **equipment**: paddles, balls, shoes, court size.
-- Ask about **players**: Ben Johns, Anna Leigh Waters, etc.
-"""
-)
+            # Save assistant reply
+            st.session_state.messages.append({"role": "assistant", "content": reply})
+
+    st.markdown("</div>", unsafe_allow_html=True)
